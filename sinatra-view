@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'sinatra'
+require 'haml'
+
+set :port, 8070
+set :logging, false
+set :clean_trace, true
+set :dump_errors, false
+
+HOME_DIR = File.expand_path("~")
+RVM_DIR = File.join(HOME_DIR,".rvm")
+GEMS_DIR = File.join(RVM_DIR,"gems")
+
+get '/' do
+  gem_info = GemInfo.new(GEMS_DIR)
+  @gem_sets = gem_info.fetch
+  haml :index
+end
+
+get '/usage' do
+  ### pull out folder sizies
+  # archives_disk_usage
+  # repos_disk_usage
+  # sources_disk_usage
+  # logs_disk_usage
+  # packages_disk_usage
+  # total_disk_usage
+  TODO
+end
+
+class DiskUsage
+  def self.target_dir(dir)
+    %x(du -hs "#{dir}").gsub("\t#{dir}\n","")
+  end
+end
+
+class GemInfo
+  attr_accessor :root_directory
+  def initialize(dir)
+    @root_directory = dir
+  end
+  
+  def fetch
+    folders = gem_folders
+    folders.collect do |folder|
+      gem_path = File.join(folder,"gems")      
+      gem_names = gem_listing(gem_path) if File.exist?(gem_path)
+      gem_set_name = path_to_gemset_name(folder)
+      ruby_version, gem_set = gem_set_name.split("@")
+      escaped_name = escape_gemset_name(gem_set_name)
+      {:name=>gem_set_name, :gems=>(gem_names||[]), :ruby=>ruby_version, :gem_set=>gem_set, :escaped_name=>escaped_name}
+    end  
+  end
+  
+  def escape_gemset_name(name)
+    name.gsub(".","_").gsub("@","_at_").gsub("-","_o_")
+  end
+  
+  def gem_folders
+    Dir[File.join(@root_directory,"*.*")]
+  end
+  
+  def path_to_gemset_name(path)
+    path.split("/").last
+  end
+  
+  def gem_listing(folder)
+    gems = Dir.entries(folder)
+    gem_names = gems.collect do |gem_name|
+      unless [".",".."].include? gem_name
+        version = gem_name.scan(/-([\d|\.|beta|pre]*)/).last
+        name = gem_name.gsub("-#{version}","")
+        {:name=>name, :version=>version}
+      end
+    end
+    gem_names = gem_names.select {|name| !name.nil? }
+  end
+end
+
+puts "\n\nRVM View is live! (http://localhost:8070)\n\n"
+`open http://localhost:8070`

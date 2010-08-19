@@ -1,0 +1,153 @@
+%html
+  %head
+    %title RVM
+    %style
+      :sass
+        body
+          :background-color #eee
+          :font-family Verdana
+        .gemset 
+          :border 1px solid #aaa
+          :width 300px
+          :display block
+          :padding 5px
+          :z-index 10
+          :background-color white
+          :margin-bottom 10px
+          h2
+            :font-size 14px
+        ul
+          :list-style none
+          :display block
+        .gem
+          .name
+          .version
+            :color #999
+        .jump
+          :float right
+        .blocking
+          :width 100%
+          :height 100%
+          :position absolute
+          :opacity 0.5
+          :background-color black
+          :top 0px
+          :left 0px
+          :display none
+          :z-index 100
+
+  %body
+    %h1 RVM
+    #container
+.jump
+  - @gem_sets.each_with_index do |gem_set, index|
+    .link
+      %a{:href=>"##{gem_set[:name]}", :data_index=>"set_#{index}", :data_ruby=>gem_set[:ruby], :data_set=>gem_set[:escaped_name]}= gem_set[:name]    
+
+.details
+  - @gem_sets.each_with_index do |gem_set, index|
+    .gemset{:id=>gem_set[:escaped_name]}
+      %a{:name=>gem_set[:name]}
+      %h2= gem_set[:name].gsub("@"," @ ")
+      %ul
+        - gem_set[:gems].each do |gem_name|
+          %li.gem
+            %span.name= gem_name[:name]
+            %span.version= "- #{gem_name[:version]}"
+
+%script{:src=>"/javascripts/jquery-1.4.2.min.js"}
+:javascript
+  
+  var rvm  = {
+    init: function(){
+      $(".jump a").click(rvm.onClick);
+      this.addAllOption();
+      this.addBlockingDiv();
+    },
+    onClick: function(){
+      var r = rvm;
+      r.hideAll();
+      r.showBlocking();
+      
+      var id = $(this).attr("data_set");      
+      var ids = r.getIds(id);
+      
+      r.showId(ids.root, 10);
+      r.showId(ids.global, 330);
+      r.showId(ids.set, 650);
+      
+      return false;    
+    },
+    
+    getIds: function(id){
+      if(id.indexOf("_at_")>0){
+        var parts = id.split("_at_");
+        var rootId = parts[0];        
+        if(parts[1]!="global"){
+          var globalId = rootId + "_at_global";
+          var setId = id;      
+        } else {
+          var globalId = id;
+          var setId = null;              
+        }
+        return {root:rootId, global:globalId, set:setId};
+      } else {
+        return {root:id, global:null, set:null};
+      }
+    },
+    
+    hideAll:function(){
+      $(".gemset").hide().css("position", "absolute")
+    },
+    
+    showId: function(id, offset){   
+      if(!id){ return; }
+      var node = $("#"+ id);
+      var current_offset = node.position();
+      if(offset){
+        node.css({
+          position: "absolute",
+          top: 50,
+          left: offset
+        });
+        node.fadeIn();
+      } else {
+        node.show();
+      }
+      node.css("z-index",1000);
+    },
+    resetToAll: function(){
+      $(".gemset").show().css({
+        "position":"inherit",
+        "z-index": 10
+      });
+    },
+    addAllOption: function(){
+      var node = $("<a href='#'>All</a>");
+      node.click(rvm.resetToAll);
+      $(".jump").append(node);    
+    },
+    
+    addBlockingDiv: function(){
+      var node = $("<div class='blocking'>&nbsp;</div>")
+      $(document.body).append(node);
+      rvm.scaleBlocking();
+      node.click(rvm.hideBlocking);
+    },
+    
+    hideBlocking: function(){
+      $(".blocking").hide();
+      rvm.resetToAll();
+    },
+    showBlocking: function(){
+      $(".blocking").show();
+    },
+    
+    scaleBlocking: function(){
+      var node = $(".blocking");
+      var docHeight = $(document.body).height();
+      node.css("height",docHeight);
+    }
+  }
+  
+  $(document).ready(function(){rvm.init();});
