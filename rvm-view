@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'sinatra'
 require 'haml'
+require 'fileutils'
 
 set :port, 8070
 set :logging, false
@@ -16,6 +17,13 @@ get '/' do
   gem_info = GemInfo.new(GEMS_DIR)
   @gem_sets = gem_info.fetch
   haml :index
+end
+
+post '/delete' do
+  gemset = params[:gemset]
+  path = File.join(GEMS_DIR,gemset)
+  FileUtils.rm_r(path) if File.exist?(path)
+  "{request:'done'}"
 end
 
 get '/usage' do

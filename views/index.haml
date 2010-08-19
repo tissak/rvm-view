@@ -18,6 +18,9 @@
             :font-size 14px
             :padding 1px
             :margin 0px
+          .delete
+            :font-size 10px
+            :text-decoration none
         ul
           :list-style none
           :display block
@@ -40,6 +43,20 @@
           :left 0px
           :display none
           :z-index 100
+        .confirmationContainer  
+          :text-align center
+          :width 100%
+          :position absolute
+          :top 100px
+          :display none
+          .confirmation
+            :width 200px
+            :height 200px
+            :margin 0px auto
+            :background-color #eee            
+            .display
+              :background-color white   
+              :margin 10px         
 
   %body
     %h1 RVM
@@ -54,11 +71,18 @@
     .gemset{:id=>gem_set[:escaped_name]}
       %a{:name=>gem_set[:name]}
       %h2= gem_set[:name].gsub("@"," @ ")
+      %a.delete{:href=>"#", :data_set=>gem_set[:name]} Delete      
       %ul
         - gem_set[:gems].each do |gem_name|
           %li.gem
             %span.name= gem_name[:name]
             %span.version= "- #{gem_name[:version]}"
+.confirmationContainer
+  .confirmation
+    %h2 Delete?
+    .display &nbsp;
+    %input.deleteActual{:type=>"button", :value=>"Yes I'm sure!"}
+    %input.deleteCancel{:type=>"button", :value=>"Argh.. no.. don't do it Jim!"}
 
 %script{:src=>"/javascripts/jquery-1.4.2.min.js"}
 :javascript
@@ -68,7 +92,34 @@
       $(".jump a").click(rvm.onClick);
       this.addAllOption();
       this.addBlockingDiv();
+      
+      $(".delete").click(rvm.deleteSet);
+      $(".deleteActual").click(rvm._delete);
+      $(".deleteCancel").click(rvm._deleteCancel);
     },
+    showConfirmation: function(){      
+      $(".confirmationContainer").show().css("z-index",2000);
+    },
+    deleteSet:function(){
+      var set = $(this).attr("data_set");
+      $(".confirmation .display").html(set);
+      rvm.targetSet = set;
+      rvm.showBlocking();
+      rvm.showConfirmation();
+      return false;
+    },
+    _deleteCancel: function(){
+      rvm.targetSet = null;
+      $(".confirmationContainer").hide();
+      rvm.hideBlocking();
+    },
+    _delete: function(){
+      console.log("calling delete")
+      $.post("delete", { gemset: rvm.targetSet }, function(){
+        document.location.reload();
+      });
+    },
+    
     onClick: function(){
       var r = rvm;
       r.hideAll();
