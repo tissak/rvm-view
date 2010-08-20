@@ -1,4 +1,6 @@
+sources :gemcutter
+
 gem "bundler"
 gem "haml"
 gem "sinatra"
-gem "fileutils"
+gem "file-utils"
